@@ -22,5 +22,4 @@ public class RSI {
 	public void setResult(float result) {
 		this.result = result;
 	}
-	
 }
