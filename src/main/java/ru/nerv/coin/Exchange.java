@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Workbook;
@@ -44,8 +45,17 @@ public abstract class Exchange {
 		return balance;
 	}
 
-	public List<Pair> getPair() {
+	public List<Pair> getPairAll() {
 		return pair;
+	}
+	
+	public Pair getPairName(String name) {
+		Iterator<Pair> tempPairList =  pair.iterator();
+        while(tempPairList.hasNext()){
+            Pair tempPair = tempPairList.next();
+            if (tempPair.name == name) { return tempPair; }
+        }
+		return null;
 	}
 	
 	public List<String> getSourcePair() {

@@ -19,6 +19,7 @@ public abstract class Pair {
 	protected float high;
 	protected float low;
 
+	List<RSI> rsi = new ArrayList<RSI>();
 	List<Trade> trade = new ArrayList<Trade>();
 	List<DataExchange> dataExchange = new ArrayList<DataExchange>();
 	int queryPeriod;
@@ -63,19 +64,21 @@ public abstract class Pair {
 
         Sheet sheet = book.createSheet(this.name);
         Row row = sheet.createRow(0);
-        Cell Date = row.createCell(0);
-        Cell High = row.createCell(1);
-        Cell Low = row.createCell(2);
-        Cell Open = row.createCell(3);
-        Cell Close = row.createCell(4);
-        Cell Type = row.createCell(5);
+        Cell date = row.createCell(0);
+        Cell high = row.createCell(1);
+        Cell low = row.createCell(2);
+        Cell open = row.createCell(3);
+        Cell close = row.createCell(4);
+        Cell type = row.createCell(5);
+        Cell rsi = row.createCell(6);
         
-        Date.setCellValue("Дата");
-        High.setCellValue("Максимум");
-        Low.setCellValue("Минимун");
-        Open.setCellValue("Открытие");
-        Close.setCellValue("Закрытие");
-        Type.setCellValue("Тип (прогноз=1)");
+        date.setCellValue("Дата");
+        high.setCellValue("Максимум");
+        low.setCellValue("Минимун");
+        open.setCellValue("Открытие");
+        close.setCellValue("Закрытие");
+        type.setCellValue("Тип (прогноз=1)");
+        rsi.setCellValue("RSI");
         
         for (int i = 0; i < dataExchange.size(); i++){
         	DataExchange tempDataExchange = dataExchange.get(i);
@@ -84,24 +87,26 @@ public abstract class Pair {
         	formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         	
 	        row = sheet.createRow(i+1);
-	        Date = row.createCell(0);
-	        High = row.createCell(1);
-	        Low = row.createCell(2);
-	        Open = row.createCell(3);
-	        Close = row.createCell(4);
-	        Type = row.createCell(5);
-	        
+	        date = row.createCell(0);
+	        high = row.createCell(1);
+	        low = row.createCell(2);
+	        open = row.createCell(3);
+	        close = row.createCell(4);
+	        type = row.createCell(5);
+	        rsi = row.createCell(6);
+	        		
 	        //DataFormat format = book.createDataFormat();
 	        //CellStyle dateStyle = book.createCellStyle();
 	        //dateStyle.setDataFormat(format.getFormat("dd/mm/yy HH:nn;@"));
 	        //Date.setCellStyle(dateStyle);
-	        Date.setCellValue(formatter.format(tempDataExchange.getDate()*1000));
+	        date.setCellValue(formatter.format(tempDataExchange.getDate()*1000));
 	        
-	        High.setCellValue(tempDataExchange.getHigh());
-	        Low.setCellValue(tempDataExchange.getLow());
-	        Open.setCellValue(tempDataExchange.getOpen());
-	        Close.setCellValue(tempDataExchange.getClose());
-	        Type.setCellValue(tempDataExchange.getType());
+	        high.setCellValue(tempDataExchange.getHigh());
+	        low.setCellValue(tempDataExchange.getLow());
+	        open.setCellValue(tempDataExchange.getOpen());
+	        close.setCellValue(tempDataExchange.getClose());
+	        type.setCellValue(tempDataExchange.getType());
+	        rsi.setCellValue(tempDataExchange.getRSI());
         }
 	}
 	
@@ -168,4 +173,51 @@ public abstract class Pair {
 		return name;
 	}
 
+	public void updateRSI(){
+		DataExchange tempDataExchange;
+		float averageClose;
+		float sumH = 0;
+		float sumL = 0;
+		float rs = 0;
+		tempDataExchange = this.dataExchange.get(0);
+		averageClose = tempDataExchange.getClose();
+		tempDataExchange.setRSI(0);
+		
+		for (int i=1; i < this.dataExchange.size(); i++) {
+			tempDataExchange = this.dataExchange.get(i);
+			
+			if (i < 16) {
+				if (tempDataExchange.getClose() - averageClose > 0) {
+					sumH += tempDataExchange.getClose() - averageClose;
+				} else {
+					sumL += (tempDataExchange.getClose() - averageClose) * -1;
+				}
+				
+				if (i == 15){
+					sumH = sumH / i;
+					sumL = sumL / i;
+					
+					rs = sumH / sumL;
+					tempDataExchange.setRSI((rs == 0) ? 100 : (float) 100 - (100 / (1 + rs)));
+				} else {
+					tempDataExchange.setRSI(0);
+				}
+				
+			} else if (i > 15) {
+				if (tempDataExchange.getClose() - averageClose > 0) {
+					sumH = ((sumH * 13) + tempDataExchange.getClose() - averageClose) / 14;
+					sumL = (sumL * 13) / 14;
+				} else {
+					sumH = (sumH * 13) / 14;
+					sumL = ((sumL * 13) + (tempDataExchange.getClose() - averageClose) * -1) / 14;
+				}
+				
+				rs = (float) sumH / sumL;
+				
+				tempDataExchange.setRSI((rs == 0) ? 100 : (float) 100 - (100 / (1 + rs)));
+			}
+		
+		averageClose = tempDataExchange.getClose();	
+		}
+	}
 }

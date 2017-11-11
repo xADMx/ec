@@ -13,7 +13,7 @@ public class DataExchange {
 	private float close;
     private long date;
     private byte type;
-    private float RSI;
+    private float rsi;
     
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public DataExchange() {	}
@@ -123,11 +123,11 @@ public class DataExchange {
 	}
 	
     public float getRSI() {
-		return RSI;
+		return rsi;
 	}
 
-	public void setRSI(float rSI) {
-		RSI = rSI;
+	public void setRSI(float rsi) {
+		this.rsi = rsi;
 	}
 
 }

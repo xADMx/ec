@@ -19,8 +19,8 @@ public class App
         
         Exchange polo = new PoloExchange("Poloniex", 14400);
         //polo.addSourcePair("USDT_BTC");
-        polo.addSourcePair("BTC_XRP");
-        polo.addSourcePair("BTC_XMR");
+        //polo.addSourcePair("BTC_XRP");
+        polo.addSourcePair("USDT_XMR");
         //polo.addSourcePair("BTC_DASH");
         //polo.addSourcePair("BTC_ZEC");
         //polo.addSourcePair("BTC_ETH");
@@ -29,8 +29,9 @@ public class App
         System.out.println( "Пары обновились!" );
         //polo.SaveToFileTrain();
         System.out.println( "Начинаем обучение!" );
-        //polo.Train();
+        //polo.Train(20000);
         polo.getTrain(100);
+        polo.getPairName("USDT_XMR").updateRSI();
         polo.SaveForecastToExcel("WorkBook.xlsx");
         System.out.println( "Finish!" );
     }
