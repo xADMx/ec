@@ -64,7 +64,7 @@ public class PoloPair extends Pair {
 	}
 
 	@Override
-	protected void updateDataExchange(String startTime, String endTime) {
+	protected void updateDataExchange(long startTime, long endTime) {
 		// TODO Auto-generated method stub
 		ObjectMapper mapper = new ObjectMapper();
         JsonNode array = null;
@@ -76,9 +76,9 @@ public class PoloPair extends Pair {
         	URIBuilder b = new URIBuilder(PublicUrl)
                     .addParameter("command", "returnChartData")
                     .addParameter("currencyPair", name) 
-                    .addParameter("start", startTime)
+                    .addParameter("start", String.valueOf(startTime))
                     //.addParameter("end", "9999999999")
-                    .addParameter("end", endTime)
+                    .addParameter("end", String.valueOf(endTime))
                     .addParameter("period", String.valueOf(queryPeriod));
         	
         	   /* RequestBody formBody = new FormBody.Builder()

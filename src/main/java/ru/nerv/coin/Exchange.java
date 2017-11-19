@@ -16,6 +16,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.googlecode.fannj.ActivationFunction;
 import com.googlecode.fannj.Fann;
+import com.googlecode.fannj.FannShortcut;
 import com.googlecode.fannj.Layer;
 import com.googlecode.fannj.Trainer;
 import com.googlecode.fannj.TrainingAlgorithm;
@@ -41,9 +42,9 @@ public abstract class Exchange {
 		this.queryPeriod = queryPeriod;
 	}
 	
-	public abstract void updatePairAll(String startTime, String endTime);
-	public abstract void updatePair(String name, String startTime, String endTime);	
-	public abstract boolean addPair(String name, String startTime, String endTime);	
+	public abstract void updatePairAll(long startTime, long endTime);
+	public abstract void updatePair(String name, long startTime, long endTime);	
+	public abstract boolean addPair(String name, long startTime, long endTime);	
 	public abstract void updateBalance();
 	
 	public List<Balance> getBalance() {
@@ -62,9 +63,18 @@ public abstract class Exchange {
 		}
 		return -1;
 	}
+	
+	public Pair getPair(String namePair) {
+		for(int i = 0; i < pair.size(); i++){ 
+			if (pair.get(i).getName() == namePair) {
+				return pair.get(i);
+			}
+		}
+		return null;
+	}
 			
 	public boolean addPair(String namePair) {
-		return this.addPair(namePair, "0", "9999999999");
+		return this.addPair(namePair, 0, (long) 9999999999);
 	}
 	
 	protected void getMaxDatePair() {
@@ -122,7 +132,7 @@ public abstract class Exchange {
 	public void TrainTwoPair(String namePairOne, String namePairTwo, int countRepeat) {
         //Для сборки новой ИНС необходимо создасть список слоев
         List<Layer> layerList = new ArrayList<Layer>();
-        layerList.add(Layer.create(12));
+        layerList.add(Layer.create(10));
         layerList.add(Layer.create(44, ActivationFunction.FANN_SIGMOID_SYMMETRIC, 0.01f));
         //layerList.add(Layer.create(12, ActivationFunction.FANN_SIGMOID_SYMMETRIC, 0.01f));
         layerList.add(Layer.create(4, ActivationFunction.FANN_SIGMOID_SYMMETRIC, 0.01f));
@@ -137,10 +147,24 @@ public abstract class Exchange {
         ошибки меньше 0.0001 */
 			File fileTrain = new File("src_train/" + this.name + "_("+ namePairOne + "," + namePairTwo +  ").data");
 			if(fileTrain.exists()) {
-				trainer.train(fileTrain.getAbsolutePath(), countRepeat, 100, 0.00009f);
+				trainer.train(fileTrain.getAbsolutePath(), countRepeat, 100, 0.0000009f);
 				fann.save("train/" + this.name + "_("+ namePairOne + "," + namePairTwo + ")");
 			}
 	}	
+	
+	public void TrainCascadeTwoPair(String namePairOne, String namePairTwo) {
+		Fann fann = new FannShortcut(10, 4);
+        Trainer trainer = new Trainer(fann);
+        /* Проведем обучение взяв уроки из файла, с максимальным колличеством
+           циклов 100000, показывая отчет каждую 100ю итерацию и добиваемся
+        ошибки меньше 0.0001 */
+		File fileTrain = new File("src_train/" + this.name + "_("+ namePairOne + "," + namePairTwo +  ").data");
+		if(fileTrain.exists()) {
+			trainer.cascadeTrain(fileTrain.getAbsolutePath(), 50, 2, 0.00009f);
+			fann.save("train/" + this.name + "_("+ namePairOne + "," + namePairTwo +  ")");
+		}
+		
+	}
 	
 	public void TrainCascade() {
         //Для сборки новой ИНС необходимо создасть список слоев
@@ -161,7 +185,7 @@ public abstract class Exchange {
 		for(int i = 0; i < pair.size(); i++){
 			File fileTrain = new File("src_train/" + this.name + "_"+ pair.get(i).getName() + ".data");
 			if(fileTrain.exists()) {
-				trainer.cascadeTrain(fileTrain.getAbsolutePath(), 50, 2, 0.00009f);
+				trainer.cascadeTrain(fileTrain.getAbsolutePath(), 30, 1, 0.00009f);
 				fann.save("train/" + this.name + "_"+ pair.get(i).getName());
 			}
 		}
@@ -236,7 +260,7 @@ public abstract class Exchange {
 		}
 	}
 	
-	public boolean getTrainTwoPair(String namePairOne, String namePairTwo, int CountIterations) {	
+	public boolean getTrainTwoPair(String namePairOne, String namePairTwo) {	
 		float[] rezult;
 		long DateDataExchange;
 		DataExchange tempDataExchangeOne = null;
@@ -326,9 +350,9 @@ public abstract class Exchange {
 	    	    this.MinDataExchang = tempPair.getDataExchange().get(0).getDate();
 	    	    tempPair.setFirstDataExchange();
 	    	    while (true) {
-		    	    writeTrain = "\n" + tempPair.getNextDataExchangeAllNorm(this.MinDataExchang) + "\n";
+		    	    writeTrain = "\n" + tempPair.getNextDataExchangeAllNormToString(this.MinDataExchang) + "\n";
 		    	    this.MinDataExchang += this.queryPeriod;
-		    	    writeTrain += tempPair.getNextDataExchangeNorm(this.MinDataExchang);
+		    	    writeTrain += tempPair.getNextDataExchangeNormToString(this.MinDataExchang);
 		    	    if (!tempPair.isEOF()) {
 		    	    	writer.append(writeTrain);
 		    	    } else {
@@ -342,7 +366,9 @@ public abstract class Exchange {
 		}
 	}
 	
-	public boolean SaveToFileTrainTwoPair(String namePairOne, String namePairTwo){
+	public abstract boolean testAndSaveToFileTwoPair(String path, String namePairOne, String namePairTwo, long startDate, int countEpoch);
+	
+	public boolean saveToFileTrainTwoPair(String namePairOne, String namePairTwo){
 		String writeTrain = "";
 		String writeTrain2 = "";
 		Pair tempPairOne = null;
@@ -363,7 +389,7 @@ public abstract class Exchange {
 	    	    tempPairTwo.setFirstDataExchange();
 	    	    
 	    	    while (true) {
-	    	    	writeTrain2 = "\n" + tempPairOne.getNextDataExchangeAllNorm(this.MinDataExchang) + " " + tempPairTwo.getNextDataExchangeNorm(this.MinDataExchang) + "\n";
+	    	    	writeTrain2 = "\n" + tempPairOne.getNextDataExchangeAllNormToString(this.MinDataExchang) + " " + tempPairTwo.getNextDataExchangeNormToString(this.MinDataExchang) + "\n";
 		    	    this.MinDataExchang += this.queryPeriod;
 		    	    writeTrain2 += tempPairOne.getNextDataExchangeNorm(this.MinDataExchang);
 		    	    if (!tempPairOne.isEOF()) {

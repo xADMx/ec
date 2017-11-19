@@ -38,14 +38,14 @@ public abstract class Pair {
 		return EOF;
 	}
 	
-	public void update(String startTime, String endTime){
+	public void update(long startTime, long endTime){
 		this.setFirstDataExchange();
-		this.updateDataExchange("0", "9999999999");
+		this.updateDataExchange(startTime, endTime);
 		this.updateTrade();
 	};
 	
 	protected abstract void updateTrade();
-	protected abstract void updateDataExchange(String startTime, String endTime);
+	protected abstract void updateDataExchange(long startTime, long endTime);
 
 	public List<Trade> getTrade() {
 		return trade;
@@ -110,7 +110,7 @@ public abstract class Pair {
         }
 	}
 	
-	public String getNextDataExchangeMod(long date) {
+	public String getNextDataExchangeModToString(long date) {
 		if (dataExchange.get(0).getDate() > date) { return "0 0"; } 	
 		while (!this.EOF) {
 			DataExchange tempDataExchange = dataExchange.get(this.metka);
@@ -120,7 +120,7 @@ public abstract class Pair {
 		return "0 0";
 	}
 	
-	public String getNextDataExchangeAllNorm(long date) {
+	public String getNextDataExchangeAllNormToString(long date) {
 		if (dataExchange.get(0).getDate() > date) { return "0 0 0 0"; } 
 		while (!this.EOF) { 
 			DataExchange tempDataExchange = dataExchange.get(this.metka);
@@ -135,7 +135,7 @@ public abstract class Pair {
 		this.EOF = (dataExchange.size() <= this.metka) ? true : false ;
 	}
 	
-	public String getNextDataExchangeNorm(long date) {
+	public String getNextDataExchangeNormToString(long date) {
 		if (dataExchange.get(0).getDate() > date) { return "0 0 0 0"; } 	
 		while (!this.EOF) {
 			DataExchange tempDataExchange = dataExchange.get(this.metka);
@@ -173,6 +173,18 @@ public abstract class Pair {
 			if (date == tempDataExchange.getDate()) {
 				return new DataExchange(Normal(tempDataExchange.getHigh()), Normal(tempDataExchange.getLow()), Normal(tempDataExchange.getOpen()), Normal(tempDataExchange.getClose()), tempDataExchange.getDate());
 			}
+		}
+		
+		return null;
+	}
+	
+	public DataExchange getNextDataExchangeNorm(long date) {
+		
+		if (dataExchange.get(0).getDate() > date) { return null; } 	
+		while (!this.EOF) {
+			DataExchange tempDataExchange = dataExchange.get(this.metka);
+			if (tempDataExchange.getDate() == date) { return new DataExchange(Normal(tempDataExchange.getHigh()), Normal(tempDataExchange.getLow()), Normal(tempDataExchange.getOpen()), Normal(tempDataExchange.getClose()), tempDataExchange.getDate()); } 	
+			this.next();
 		}
 		
 		return null;
