@@ -74,7 +74,7 @@ public abstract class Exchange {
 	}
 			
 	public boolean addPair(String namePair) {
-		return this.addPair(namePair, 0, (long) 9999999999);
+		return this.addPair(namePair, 0, Long.valueOf("9999999999"));
 	}
 	
 	protected void getMaxDatePair() {
