@@ -28,7 +28,7 @@ public abstract class Pair {
 	
 	public Pair(String name, int queryPeriod) {
 		super();
-		this.metka = -1;
+		this.metka = 0;
 		this.name = name;
 		this.queryPeriod = queryPeriod;
 		this.EOF = false;
@@ -38,14 +38,14 @@ public abstract class Pair {
 		return EOF;
 	}
 	
-	public void update(){
+	public void update(String startTime, String endTime){
 		this.setFirstDataExchange();
-		this.updateDataExchange(0);
+		this.updateDataExchange("0", "9999999999");
 		this.updateTrade();
 	};
 	
 	protected abstract void updateTrade();
-	protected abstract void updateDataExchange(int time);
+	protected abstract void updateDataExchange(String startTime, String endTime);
 
 	public List<Trade> getTrade() {
 		return trade;
@@ -53,7 +53,7 @@ public abstract class Pair {
 	
 	public void setFirstDataExchange() {
 		this.EOF = false;
-		this.metka = -1;
+		this.metka = 0;
 	}
 	
 	public long getSizeDataExchange() {
@@ -113,23 +113,34 @@ public abstract class Pair {
 	public String getNextDataExchangeMod(long date) {
 		if (dataExchange.get(0).getDate() > date) { return "0 0"; } 	
 		while (!this.EOF) {
-			this.metka++;
-			if (dataExchange.size() <= this.metka + 1)
-				this.EOF = true; 
 			DataExchange tempDataExchange = dataExchange.get(this.metka);
-			if (tempDataExchange.getDate() == date) { return tempDataExchange.toStringHLNorm(this.high, this.low); } 			
+			if (tempDataExchange.getDate() == date) { return tempDataExchange.toStringHLNorm(this.high, this.low); } 	
+			this.next();	
 		}
 		return "0 0";
 	}
 	
-	public String getNextDataExchange(long date) {
+	public String getNextDataExchangeAllNorm(long date) {
+		if (dataExchange.get(0).getDate() > date) { return "0 0 0 0"; } 
+		while (!this.EOF) { 
+			DataExchange tempDataExchange = dataExchange.get(this.metka);
+			if (tempDataExchange.getDate() == date) { return tempDataExchange.toStringAllNorm(this.high, this.low); } 
+			this.next();
+		}
+		return "0 0 0 0";
+	}
+	
+	private void next(){
+		this.metka++;
+		this.EOF = (dataExchange.size() <= this.metka) ? true : false ;
+	}
+	
+	public String getNextDataExchangeNorm(long date) {
 		if (dataExchange.get(0).getDate() > date) { return "0 0 0 0"; } 	
 		while (!this.EOF) {
-			this.metka++;
-			if (dataExchange.size() <= this.metka + 1)
-				this.EOF = true; 
 			DataExchange tempDataExchange = dataExchange.get(this.metka);
-			if (tempDataExchange.getDate() == date) { return tempDataExchange.toStringAllNorm(this.high, this.low); } 			
+			if (tempDataExchange.getDate() == date) { return tempDataExchange.toStringNorm(this.high, this.low); } 	
+			this.next();
 		}
 		return "0 0 0 0";
 	}
@@ -152,9 +163,19 @@ public abstract class Pair {
 		return dataExchange;
 	}
 	
-	public DataExchange getLastDataExchange() {
+	public DataExchange getLastDataExchangeNorm() {
 		DataExchange temp = dataExchange.get(this.dataExchange.size()-1);
 		return new DataExchange(Normal(temp.getHigh()), Normal(temp.getLow()), Normal(temp.getOpen()), Normal(temp.getClose()), temp.getDate());
+	}
+	
+	public DataExchange getFindDataExchangeNorm(long date) {
+		for (DataExchange tempDataExchange : dataExchange) {
+			if (date == tempDataExchange.getDate()) {
+				return new DataExchange(Normal(tempDataExchange.getHigh()), Normal(tempDataExchange.getLow()), Normal(tempDataExchange.getOpen()), Normal(tempDataExchange.getClose()), tempDataExchange.getDate());
+			}
+		}
+		
+		return null;
 	}
 	
 	public void addDataExchange(float open, float close, float low, float high, long date, byte type) {

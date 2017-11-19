@@ -106,6 +106,10 @@ public class DataExchange {
 		return this.getDayWeek() + " " + this.getHourDay() + " " + (this.open - low)/(high - low) + " " +  (this.close - low)/(high - low) + " " + (this.low - low)/(high - low) + " " +  (this.high - low)/(high - low);
 	}
 	
+	public String toStringNorm(float high, float low) {
+		return (this.open - low)/(high - low) + " " +  (this.close - low)/(high - low) + " " + (this.low - low)/(high - low) + " " +  (this.high - low)/(high - low);
+	}
+	
 	public float getDayWeek(){
 		Calendar c = Calendar.getInstance();
 		c.setTime(new Date(this.date * 1000));
