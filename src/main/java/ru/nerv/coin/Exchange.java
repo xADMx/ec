@@ -1,15 +1,11 @@
 package ru.nerv.coin;
 
-import java.nio.file.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-
-import javax.rmi.CORBA.Util;
 
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook; 
@@ -160,10 +156,22 @@ public abstract class Exchange {
         ошибки меньше 0.0001 */
 		File fileTrain = new File("src_train/" + this.name + "_("+ namePairOne + "," + namePairTwo +  ").data");
 		if(fileTrain.exists()) {
-			trainer.cascadeTrain(fileTrain.getAbsolutePath(), 50, 2, 0.00009f);
+			trainer.cascadeTrain(fileTrain.getAbsolutePath(), 50, 1, 0.00009f);
 			fann.save("train/" + this.name + "_("+ namePairOne + "," + namePairTwo +  ")");
 		}
 		
+	}
+	
+	public void TrainCascadeAllPair() {
+		for(Pair tempPairOne : pair){	 
+			Fann fann = new FannShortcut(2 + pair.size() * 4, 4);
+	        Trainer trainer = new Trainer(fann);
+			File fileTrain = new File("src_train/" + this.name + "_(" + this.getAllNamePair(tempPairOne.getName()) +  ").data");
+			if(fileTrain.exists()) {
+				trainer.cascadeTrain(fileTrain.getAbsolutePath(), 50, 1, 0.000009f);
+				fann.save("train/" + this.name + "_("+ this.getAllNamePair(tempPairOne.getName()) +  ")");
+			}
+		}
 	}
 	
 	public void TrainCascade() {
@@ -300,6 +308,57 @@ public abstract class Exchange {
 			return false;
 		}
 	}
+	
+	public boolean getTrainAllPair(String namePairOne) {	
+		float[] rezult = new float[pair.size() * 4 + 2];
+		long DateDataExchange;
+		DataExchange tempDataExchangeOne = null;
+		Pair tempPairOne = null;
+		int indexPairOne = this.existPair(namePairOne);
+
+		if (indexPairOne != -1){
+			tempPairOne = pair.get(indexPairOne); 
+
+
+			tempDataExchangeOne = tempPairOne.getLastDataExchangeNorm();
+			DateDataExchange = tempDataExchangeOne.getDate();		
+			
+			rezult[0] = tempDataExchangeOne.getDayWeek();
+			rezult[1] = tempDataExchangeOne.getHourDay();
+			rezult[2] = tempDataExchangeOne.getOpen();
+			rezult[3] = tempDataExchangeOne.getClose();
+			rezult[4] = tempDataExchangeOne.getLow();
+			rezult[5] = tempDataExchangeOne.getHigh();
+			
+			System.arraycopy(getAllPairInfoTrain(namePairOne), 0, rezult, 6, (pair.size() -1) * 4);
+			
+			Fann fann = new Fann("train/" + this.name + "_("+ this.getAllNamePair(tempPairOne.getName()) +  ")");
+		    rezult = fann.run(rezult);
+		    DateDataExchange += this.queryPeriod;
+		    tempPairOne.addDataExchange(rezult[0], rezult[1], rezult[2], rezult[3], DateDataExchange, (byte) 1);
+		    
+		    return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public float[] getAllPairInfoTrain(String namePairOne) {	
+		float[] rezult = new float[(pair.size() -1) * 4];
+		int index = 0;
+		DataExchange tempDataExchangeOne;
+		for (Pair tempPair : pair){
+			if (tempPair.getName() != namePairOne){
+				tempDataExchangeOne = tempPair.getLastDataExchangeNorm();
+				rezult[index+0] = tempDataExchangeOne.getOpen();
+				rezult[index+1] = tempDataExchangeOne.getClose();
+				rezult[index+2] = tempDataExchangeOne.getLow();
+				rezult[index+3] = tempDataExchangeOne.getHigh();
+				index += 4;
+			}
+		} 
+		return rezult;
+	}
 			    
 	/*public void SaveToFileTrain(){
 		String writeTrain;
@@ -391,7 +450,7 @@ public abstract class Exchange {
 	    	    while (true) {
 	    	    	writeTrain2 = "\n" + tempPairOne.getNextDataExchangeAllNormToString(this.MinDataExchang) + " " + tempPairTwo.getNextDataExchangeNormToString(this.MinDataExchang) + "\n";
 		    	    this.MinDataExchang += this.queryPeriod;
-		    	    writeTrain2 += tempPairOne.getNextDataExchangeNorm(this.MinDataExchang);
+		    	    writeTrain2 += tempPairOne.getNextDataExchangeNormToString(this.MinDataExchang);
 		    	    if (!tempPairOne.isEOF()) {
 		    	    	if(writeTrain2.indexOf("0 0 0 0") == -1) {
 		    	    		writeTrain += writeTrain2;
@@ -411,6 +470,89 @@ public abstract class Exchange {
 		} else {
 			return false;
 		}
+		
+	}
+	
+	String getAllNamePair(String name){
+		String outName = name;
+		
+		for(Pair namePair : pair){
+			if (namePair.getName() != name){
+				outName += ", " + namePair.getName();
+			}
+		}
+		
+		return (name == "") ? outName.substring(2) : outName;
+	}
+	
+	String getAllPairDataExchangeNorm(String name, long date){
+		String outDataExchangeNorm = "";
+		
+		for(Pair namePair : pair){
+			if (namePair.getName() != name){
+				outDataExchangeNorm += " " + namePair.getNextDataExchangeNormToString(date);
+			}
+		}
+		
+		return outDataExchangeNorm.trim();
+	}
+	
+	void setAllPairFatDataExchangeNorm(){	
+		for(Pair FirstDataExchange : pair){
+			FirstDataExchange.setFirstDataExchange();
+		}
+	}
+	
+	void getAllMinDatePair(){
+		this.MinDataExchang = 0;
+		for(Pair namePair : pair){		
+			if (namePair.getDataExchange().get(0).getDate() > this.MinDataExchang){
+				this.MinDataExchang = namePair.getDataExchange().get(0).getDate();
+			}
+		}
+		
+	}
+	
+	public boolean saveToFileTrainAllPair(){
+		String writeTrain = "";
+		String writeTrain2 = "";
+		int indexData = 0;
+
+		int countInNerv = 2 + pair.size() * 4;
+		
+		for(Pair tempPairOne : pair){
+	       try(FileWriter writer = new FileWriter("src_train/" + this.name + "_("+ this.getAllNamePair(tempPairOne.getName()) +  ").data", false))
+	        {	     	    	   
+	    	    //writer.write(tempPairOne.getSizeDataExchange() - 1 + " 6 4");
+	    	    this.getAllMinDatePair();
+	    	    this.setAllPairFatDataExchangeNorm();
+	    	    
+	    	    while (true) {
+	    	    	writeTrain2 = "\n" + tempPairOne.getNextDataExchangeAllNormToString(this.MinDataExchang) + " " + this.getAllPairDataExchangeNorm(tempPairOne.getName(),this.MinDataExchang) + "\n";
+		    	    this.MinDataExchang += this.queryPeriod;
+		    	    writeTrain2 += tempPairOne.getNextDataExchangeNormToString(this.MinDataExchang);
+		    	    if (!tempPairOne.isEOF()) {
+		    	    	if(writeTrain2.indexOf("0 0 0 0") == -1) {
+		    	    		writeTrain += writeTrain2;
+		    	    		indexData++;
+		    	    	}
+		    	    } else {
+		    	    	break;
+		    	    }   
+	    	    }
+	    	    
+	    	    writer.write(indexData + " " + countInNerv + " 4" + writeTrain);
+	    		writeTrain = "";
+	    		writeTrain2 = "";
+	    		indexData = 0;
+	        }
+	        catch(IOException ex){
+	            System.out.println(ex.getMessage());
+	            return false;
+	        }
+		} 
+		
+		return true;
 		
 	}
 		

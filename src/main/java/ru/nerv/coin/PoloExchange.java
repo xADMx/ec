@@ -21,19 +21,23 @@ public class PoloExchange extends Exchange {
 		DataExchange tempDataExchangeTwo = null;
 		Pair tempPairOne = null;
 		Pair tempPairTwo = null;
-		Pair tempPair = new PoloPair(namePairOne, queryPeriod);
+		Pair tempNewPair = new PoloPair(namePairOne, queryPeriod);
 		int indexPairOne = this.existPair(namePairOne);
 		int indexPairTwo = this.existPair(namePairTwo);
 		
 		if (indexPairOne != -1 && indexPairTwo != -1){
 				tempPairOne = pair.get(indexPairOne); 
 				tempPairTwo = pair.get(indexPairTwo);
+				tempNewPair.setHigh(tempPairOne.getHigh());
+				tempNewPair.setLow(tempPairTwo.getLow());
 				
 				for (int i = 0; i < countEpoch; i++){
+					tempPairOne.setFirstDataExchange();
+					tempPairTwo.setFirstDataExchange();
+					tempDataExchangeOne = tempPairOne.getNextDataExchange(startDate);
+					tempDataExchangeTwo = tempPairTwo.getNextDataExchange(startDate);
 					
-					tempDataExchangeOne = tempPairOne.getNextDataExchangeNorm(startDate);
-					tempDataExchangeTwo = tempPairTwo.getNextDataExchangeNorm(startDate);
-					tempPair.addDataExchange(tempDataExchangeOne.getOpen(), 
+					tempNewPair.addDataExchange(tempDataExchangeOne.getOpen(), 
 												tempDataExchangeOne.getClose(), 
 												tempDataExchangeOne.getLow(), 
 												tempDataExchangeOne.getHigh(), 
@@ -54,17 +58,13 @@ public class PoloExchange extends Exchange {
 					Fann fann = new Fann("train/" + this.name + "_("+ namePairOne + "," + namePairTwo + ")");
 				    rezult = fann.run(rezult);
 				    startDate += this.queryPeriod;
-				    tempPair.addDataExchange(rezult[0], rezult[1], rezult[2], rezult[3], startDate, (byte) 1);
-				}
-				Workbook book = new XSSFWorkbook();
-				
-				for(int i = 0; i < pair.size(); i++){
-					tempPair.CreateWorkSheet(book);
+				    tempNewPair.addDataExchange(rezult[0], rezult[1], rezult[2], rezult[3], startDate, (byte) 1);
 				}
 				
-		        try {
+				
+		        try (Workbook book = new XSSFWorkbook()) {
+		        	tempNewPair.CreateWorkSheet(book);
 					book.write(new FileOutputStream(path));
-					book.close();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

@@ -19,14 +19,12 @@ public class DataExchange {
 	public DataExchange() {	}
       
 	public DataExchange(float high, float low, float open, float close, long date, byte type) {
-		if (type == 1) {
 			this.high = high;
 			this.low = low;
 			this.open = open;
 			this.close = close;
 			this.date = date;
 			this.type = type;
-		}
 	}
 	
 	public DataExchange(float high, float low, float open, float close, long date) {

@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 import org.apache.http.client.utils.URIBuilder;
 
-
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -66,6 +66,7 @@ public class PoloPair extends Pair {
 	@Override
 	protected void updateDataExchange(long startTime, long endTime) {
 		// TODO Auto-generated method stub
+		OkHttpClient client = new OkHttpClient();
 		ObjectMapper mapper = new ObjectMapper();
         JsonNode array = null;
         

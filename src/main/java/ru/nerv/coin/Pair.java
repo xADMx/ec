@@ -10,8 +10,6 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 
-import okhttp3.OkHttpClient;
-
 public abstract class Pair {
 	protected String name;
 	protected int metka;
@@ -23,9 +21,7 @@ public abstract class Pair {
 	List<Trade> trade = new ArrayList<Trade>();
 	List<DataExchange> dataExchange = new ArrayList<DataExchange>();
 	int queryPeriod;
-	
-	protected final OkHttpClient client = new OkHttpClient();
-	
+		
 	public Pair(String name, int queryPeriod) {
 		super();
 		this.metka = 0;
@@ -158,6 +154,22 @@ public abstract class Pair {
 				
 		return tempDataExchange;
 	}
+	
+	public float getHigh() {
+		return high;
+	}
+
+	public void setHigh(float high) {
+		this.high = high;
+	}
+
+	public float getLow() {
+		return low;
+	}
+
+	public void setLow(float low) {
+		this.low = low;
+	}
 
 	public List<DataExchange> getDataExchange() {
 		return dataExchange;
@@ -178,18 +190,20 @@ public abstract class Pair {
 		return null;
 	}
 	
-	public DataExchange getNextDataExchangeNorm(long date) {
+	public DataExchange getNextDataExchange(long date) {
 		
 		if (dataExchange.get(0).getDate() > date) { return null; } 	
 		while (!this.EOF) {
 			DataExchange tempDataExchange = dataExchange.get(this.metka);
-			if (tempDataExchange.getDate() == date) { return new DataExchange(Normal(tempDataExchange.getHigh()), Normal(tempDataExchange.getLow()), Normal(tempDataExchange.getOpen()), Normal(tempDataExchange.getClose()), tempDataExchange.getDate()); } 	
+			if (tempDataExchange.getDate() == date) { 
+				return new DataExchange(Normal(tempDataExchange.getHigh()), Normal(tempDataExchange.getLow()), Normal(tempDataExchange.getOpen()), Normal(tempDataExchange.getClose()), tempDataExchange.getDate()); 
+			} 	
 			this.next();
 		}
 		
 		return null;
 	}
-	
+		
 	public void addDataExchange(float open, float close, float low, float high, long date, byte type) {
 		dataExchange.add(new DataExchange( DeNormal(high), DeNormal(low), DeNormal(open), DeNormal(close), date, type));
 	}
